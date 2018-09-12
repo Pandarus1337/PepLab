@@ -1,14 +1,24 @@
 #!/bin/bash
+# Script to set up new user more easily on all three servers at once
+# Last modified: 9/12/18
+
+flag=0
+
+# Check flag to prevent stupid infinite whatever recursion
+while [[ "$1" =~ ^- && ! "$1" == "--" ]]; do case $1 in
+  -f | --flag )
+    flag=1
+    ;; 
+esac; shift; done
+if [[ "$1" == '--' ]]; then shift; fi
 
 # Read desired username, save value
 read -p "Enter desired username: " username
-echo "Desired username is:" $username		# Debug: check username value
 
 # Read desired password, save value
 printf "Enter desired password: " 
 read -s passwrd
 echo ""
-echo "Desired password is:" $passwrd		# Debug: check password value 
 
 # For each server, run the new_user_script
 # No need to rewrite an entire script
@@ -17,13 +27,16 @@ echo "Desired password is:" $passwrd		# Debug: check password value
 # Finds next open UID in the range specified (5030-6000)
 # Using that range since mine is 5030
 nextUID=$(awk -F: '{uid[$3]=1}END{for(x=5030; x<=6000; x++) {if(uid[x] != ""){}else{print x; exit;}}}' /etc/passwd)
-echo "Next available UID is:" $nextUID		# Debug: check UID value
 
-ssh jtsai@128.104.140.215 "user=username; echo $user"
+#(echo $username; echo $nextUID; echo $nextUID; echo passwrd) | sudo ./new_user.sh
+
+if [ $flag -gt 0 ]; then
+	ssh jtsai@128.104.140.174 "cd server-setup-scripts/setup; (echo $username; echo $nextUID; echo $nextUID; echo $passwrd) | sudo ./new_user.sh -f"
+	ssh jtsai@128.104.140.175 "cd server-setup-scripts/setup; (echo $username; echo $nextUID; echo $nextUID; echo $passwrd) | sudo ./new_user.sh -f"
+fi
 
 # Run the script on the current computer
 # Pass in appropriate values to new_user_script
-(echo $username; echo $nextUID; echo panda_tester; echo passwrd) | sudo ./new_user.sh
 
 # TO DO: cd into appropriate directory
 
